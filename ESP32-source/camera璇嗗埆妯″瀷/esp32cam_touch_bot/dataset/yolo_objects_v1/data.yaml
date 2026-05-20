@@ -1,0 +1,16 @@
+path: /Users/yanyangnan/Desktop/ESP32/camera识别模型/esp32cam_touch_bot/dataset/yolo_objects_v1
+train: images/train
+val: images/val
+names:
+  0: black_ball
+  1: black_cube
+  2: black_pyramid
+  3: blue_ball
+  4: blue_cube
+  5: blue_pyramid
+  6: green_ball
+  7: green_cube
+  8: green_pyramid
+  9: red_ball
+  10: red_cube
+  11: red_pyramid

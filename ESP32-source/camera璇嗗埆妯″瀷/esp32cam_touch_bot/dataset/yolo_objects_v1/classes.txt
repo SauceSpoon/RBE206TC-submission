@@ -1,0 +1,12 @@
+black_ball
+black_cube
+black_pyramid
+blue_ball
+blue_cube
+blue_pyramid
+green_ball
+green_cube
+green_pyramid
+red_ball
+red_cube
+red_pyramid

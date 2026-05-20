@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.esp32.robot-console.server</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/yanyangnan/Desktop/ESP32/scripts/run-server.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/yanyangnan/Desktop/ESP32</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/esp32-robot-console/server.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/esp32-robot-console/server.launchd.err.log</string>
+</dict>
+</plist>
