@@ -1,3 +1,224 @@
+#ESP32 Robot Graphical Web Control and Burning Station
+
+The first version of the project implemented according to the first phase goals of `esp_32_robot_web_flasher_control_plan.md` contains four parts:
+
+- `apps/web`: React + Vite graphical console
+- `apps/server`: Node.js + Express local control service
+- `firmware/esp32_robot_controller`: ESP32 Arduino/PlatformIO example firmware
+- `firmware/esp32_cam_streamer`: Standalone ESP32-CAM streaming firmware
+
+## Current capabilities
+
+- Enter the IP on the web page and connect to the robot
+- The web page independently connects to ESP32-CAM and displays real-time video streams and snapshot previews
+- Forward browser control commands to ESP32 through local services
+- A new local script chat window has been added to the control page, and Chinese scripts can be used to directly drive the servo.
+- Natural language can be planned into a whitelist script through local Ollama / Gemma, and then handed over to the local service for execution
+- Supports action buttons, emergency stop, attitude return, and 7-way servo slider
+- Upload `.bin` firmware and push to ESP32 via OTA
+- The camera module also supports remote upgrade via Wi-Fi OTA
+- Reserve USB burning entrance as first time burning/brick rescue mode
+- Automatically scan and display available serial devices, and the page will automatically refresh after plugging and unplugging.
+- Camera images can be forwarded through the local service proxy, and the stream can also be viewed when the console is opened remotely
+- Status, log, delay, battery, motor angle and other information are displayed in real time on the page
+
+## PCA9685 Wiring
+
+- The current firmware outputs servo PWM through PCA9685 and no longer directly uses ESP32 GPIO to control the servo.
+- Default I2C wiring: ESP32 `GPIO 21 -> SDA`, `GPIO 22 -> SCL`
+- Default servo channel mapping: servo `1/2/3` on the web page corresponds to PCA9685 channel `0/1/2`
+- PCA9685 logic power supply `VCC` is recommended to be connected to ESP32 `3.3V`
+- Servo power supply `V+` continues to be connected to the output of your buck module
+- `ESP32 GND`, `PCA9685 GND`, and the battery negative pole must be grounded together
+
+## Directory structure
+
+```text
+ESP32/
+├─ apps/
+│ ├─ server/ # Local control service
+│ └─ web/ # Web console
+├─ firmware/
+│ ├─ esp32_robot_controller/
+│ ├─ include/
+│ ├─ src/
+│ └─ platformio.ini
+│ └─ esp32_cam_streamer/
+│ ├─ include/
+│ ├─ src/
+│ └─ platformio.ini
+├─docs/
+│ └─ flash-version-workflow.md
+├─ .github/workflows/
+│ └─ ci.yml
+└─ README.md
+```
+
+## GitHub warehouse and version management
+
+This directory should be maintained as a single repository for "all robot programming-related codes" to avoid future occurrences:
+
+- Only the board code was changed, but the Web/Server protocol changes were not saved simultaneously.
+- Directly overwrites the last stable function, causing a certain ability to be removed.
+- The burning was successful, but I can’t find which version of the code it corresponded to when I looked back.
+
+Recommended execution method:
+
+1. Submit the code before each preparation.
+2. Add Git tag after each verification is stable.
+3. New features are always developed in branches and do not directly cover the stable version.
+4. After pushing to GitHub, treat GitHub as the only remote backup.
+
+For the complete process, see [docs/flash-version-workflow.md](/Users/yanyangnan/Desktop/ESP32/docs/flash-version-workflow.md).
+
+## Quick start
+
+### 1. Install dependencies
+
+Execute in the project root directory:
+
+```bash
+npm install
+```
+
+### 2. Start local service
+
+```bash
+npm run dev:server
+```
+
+Listens to `http://localhost:3001` by default.
+
+If you need to customize the configuration, copy [apps/server/.env.example](/Users/yanyangnan/Desktop/ESP32/apps/server/.env.example) to `.env` and modify it.
+
+If you want to connect to local Ollama / Gemma, first make sure Ollama is started and the model name can be seen in `ollama list`, and then configure it in [apps/server/.env](/Users/yanyangnan/Desktop/ESP32/apps/server/.env):
+
+```bash
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=gemma4:26b
+OLLAMA_TIMEOUT_MS=30000
+```
+
+The model name must use the name displayed in your local `ollama list`; if it is actually called `gemma3:4b`, `gemma3n` or other names, change `OLLAMA_MODEL` to the corresponding value.
+
+### 3. Start the web console
+
+```bash
+npm run dev:web
+```
+
+The default development address is `http://localhost:5173`.
+
+If you need to modify the API address, copy [apps/web/.env.example](/Users/yanyangnan/Desktop/ESP32/apps/web/.env.example) to `.env`.
+
+### 4. Burn in ESP32 base firmware
+
+Enter [firmware/esp32_robot_controller](/Users/yanyangnan/Desktop/ESP32/firmware/esp32_robot_controller):
+
+```bash
+pio run -t upload
+```
+
+Before using it for the first time, please copy [include/secrets.example.h](/Users/yanyangnan/Desktop/ESP32/firmware/esp32_robot_controller/include/secrets.example.h) to `secrets.h`, and then modify the Wi‑Fi information in it.
+
+### 5. Burn standalone ESP32-CAM firmware
+
+Enter [firmware/esp32_cam_streamer](/Users/yanyangnan/Desktop/ESP32/firmware/esp32_cam_streamer):
+
+```bash
+pio run -t upload
+```
+
+Copy [include/secrets.example.h](/Users/yanyangnan/Desktop/ESP32/firmware/esp32_cam_streamer/include/secrets.example.h) to `secrets.h`, fill in Wi‑Fi, and then burn. By default it will provide:
+
+- `/stream`: MJPEG real-time video stream
+- `/capture`: single frame capture
+- `/status`: camera parameters and online status
+- `/health`: health check
+- `/update`: camera firmware OTA update entrance
+
+### 6. Unified verification
+
+Before preparing to burn or push to GitHub, it is recommended to execute:
+
+```bash
+npm run check
+```
+
+This checks in order:
+
+- Is the web front end buildable?
+- Whether the syntax of the local server-side JS file passes
+- Whether the robot main control firmware can be compiled
+- Is the camera firmware compilable?
+
+## Run process
+
+1. Use USB to burn the basic firmware with OTA into ESP32
+2. Open the Web console, enter the robot IP and connect
+3. Send control commands through action buttons and sliders
+4. Select the `.bin` firmware and upload it to the local service
+5. Select the burning target (robot master/camera module) and OTA/USB mode
+6. Click "Upload and Upgrade", the local service will push the firmware to `/update` of the corresponding device
+7. Camera preview uses local service proxies `/api/camera/stream` and `/api/camera/snapshot` by default
+
+## Local Service API
+
+- `POST /api/connect`
+- `POST /api/disconnect`
+- `POST /api/camera/connect`
+- `POST /api/camera/disconnect`
+- `GET /api/status`
+- `GET /api/camera/status`
+- `GET /api/camera/stream`
+- `GET /api/camera/snapshot`
+- `POST /api/firmware/upload`
+- `POST /api/firmware/flash`
+- `POST /api/script/run`
+- `POST /api/script/stop`
+- `POST /api/brain/run`
+- `POST /api/control`
+- `GET /api/serial/ports`
+- `GET /api/health`
+- `WS /ws`: Push status and logs to the web frontend
+
+## USB burning instructions
+
+`POST /api/firmware/flash` supports:
+
+- `target: "robot" | "camera"`
+- `mode: "ota" | "usb"`
+
+Among them `mode: "usb"` is called by default:
+
+```bash
+python3 -m esptool --chip esp32 --port <port> --baud <baudRate> write_flash 0x10000 <file>
+```
+
+This is a simplified writing method for OTA application partitions, suitable for devices that already have a basic partition table. If you need to completely burn the bootloader / partitions / app for the first time, please adjust the offset and command strategy in [apps/server/.env.example](/Users/yanyangnan/Desktop/ESP32/apps/server/.env.example).
+
+## ESP32 firmware dependencies
+
+It is recommended to use PlatformIO, which has been declared in [platformio.ini](/Users/yanyangnan/Desktop/ESP32/firmware/esp32_robot_controller/platformio.ini):
+
+- `ESP Async WebServer`
+- `AsyncTCP`
+- `ArduinoJson`
+- `ESP32Servo`
+
+## Suggestions for subsequent expansion
+
+- Automatically scan LAN devices
+- Action recording/playback
+-Multi-robot switching
+- IMU visualization
+- Camera streaming
+- More complete USB first-time burning process
+
+
+
+
+
 # ESP32 机器人图形化 Web 控制与烧录台
 
 按 `esp_32_robot_web_flasher_control_plan.md` 的第一阶段目标实现的初版项目，包含四部分：
