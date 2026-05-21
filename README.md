@@ -17,6 +17,7 @@ oodk(CAD model)
 Content: 3D CAD models of the OODK.
 Formats: Includes source files (e.g., SolidWorks/STEP) and renderings.
 Purpose: Demonstrates the mechanical structure design and assembly details.
+
 Report and powerpoint
 Content: Project documentation.
 Includes:
