@@ -1,5 +1,7 @@
 RBE206TC-submission
 
+Some Statement: Due to file path issues, some ESP32 code files may not be decompressed directly, but all CAD and report documents can be opened normally. In order to avoid unnecessary misunderstandings, the code part is stored separately in another compressed package in the mailbox. Even so, most of the functional implementations are still relatively complete.
+
 Project Overview
 
 This repository serves as the final submission for the RBE206TC course. It encompasses the complete project lifecycle, including the firmware source code for ESP32 wireless communication, the mechanical CAD models for the OODK, and the comprehensive final report and presentation slides.
